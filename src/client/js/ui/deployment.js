@@ -1,0 +1,57 @@
+export const deploymentGuides = {
+  'GitHub Pages': [
+    'Create or open a GitHub repository.',
+    'Add the exported index.html at the repository root.',
+    'Commit and push the file.',
+    'Open Settings → Pages in the repository.',
+    'Choose “Deploy from a branch,” select the branch and root folder, then save.',
+    'Open the published URL shown by GitHub after the build finishes.',
+  ],
+  Netlify: [
+    'Create a Netlify account and open Add new site.',
+    'For a quick manual deploy, drag the exported project folder into Netlify Drop.',
+    'For continuous updates, push index.html to GitHub and choose “Import an existing project.”',
+    'Use the repository root as the publish directory; no build command is needed.',
+    'Verify the generated Netlify URL.',
+  ],
+  Vercel: [
+    'Push the exported index.html to a Git repository.',
+    'In Vercel, choose Add New → Project and import that repository.',
+    'Select “Other” as the framework preset.',
+    'Leave the build command empty and use the repository root as the output directory.',
+    'Deploy and verify the assigned URL.',
+  ],
+  'Cloudflare Pages': [
+    'Push the exported index.html to a Git repository.',
+    'Open Workers & Pages → Create → Pages → Connect to Git.',
+    'Choose the repository and use no build command.',
+    'Set the output directory to the folder containing index.html.',
+    'Save and deploy, then verify the Pages URL.',
+  ],
+  'cPanel / Shared Hosting': [
+    'Sign in to cPanel and open File Manager.',
+    'Open public_html for your domain.',
+    'Upload index.html (and the assets folder if your export includes one).',
+    'Replace an old index file only after making a backup.',
+    'Visit your domain and verify the page.',
+  ],
+  'Apache / Nginx': [
+    'Locate the configured document root for your site.',
+    'Copy index.html into that document root.',
+    'If assets are present, keep their relative folder structure.',
+    'Confirm the web-server user can read the files.',
+    'Reload the site; exact document-root and reload steps vary by server configuration.',
+  ],
+  'Local Computer': [
+    'Keep the exported folder on your computer.',
+    'From this project, run: npx serve exports/your-project-slug',
+    'Open the localhost URL printed in the terminal.',
+    'You can also use the Preview Export button above while the builder is running.',
+  ],
+  'Other / Manual': [
+    'Choose any host that serves static HTML files.',
+    'Upload index.html as the default document.',
+    'Preserve relative asset paths if your export includes an assets folder.',
+    'No Node.js, database, or server-side runtime is required for the generated site.',
+  ],
+};

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Build and export a professional portfolio website from your laptop."
+    />
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%238b5cf6'/%3E%3Cpath d='M15 45V18h18c10 0 16 5 16 14S43 46 33 46H25v-9h8c4 0 6-2 6-5s-2-5-6-5h-8v18z' fill='white'/%3E%3C/svg%3E"
+    />
+    <title>Local Portfolio Builder</title>
+  </head>
+  <body class="bg-ink text-slate-100 antialiased">
+    <div id="app" class="flex h-screen min-h-[640px] flex-col overflow-hidden">
+      <header class="editor-topbar" aria-label="Editor toolbar">
+        <div class="flex min-w-0 items-center gap-3">
+          <button id="home-button" class="brand-mark" aria-label="Open start screen">P</button>
+          <div class="hidden min-w-0 sm:block">
+            <p class="truncate text-sm font-semibold text-white" id="project-name">
+              Untitled Portfolio
+            </p>
+            <p class="text-xs text-slate-400" id="save-label">Ready</p>
+          </div>
+        </div>
+        <div class="toolbar-group" aria-label="History">
+          <button
+            id="undo-button"
+            class="icon-button"
+            title="Undo (Ctrl+Z)"
+            aria-label="Undo"
+            disabled
+          >
+            ↶
+          </button>
+          <button
+            id="redo-button"
+            class="icon-button"
+            title="Redo (Ctrl+Shift+Z)"
+            aria-label="Redo"
+            disabled
+          >
+            ↷
+          </button>
+        </div>
+        <div class="viewport-switcher" role="group" aria-label="Preview size">
+          <button class="viewport-button is-active" data-viewport="base" title="Desktop">
+            Desktop
+          </button>
+          <button class="viewport-button" data-viewport="tablet" title="Tablet">Tablet</button>
+          <button class="viewport-button" data-viewport="mobile" title="Mobile">Mobile</button>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <button id="settings-button" class="secondary-button hidden md:inline-flex">
+            Site settings
+          </button>
+          <button id="preview-button" class="secondary-button">Preview</button>
+          <button id="save-button" class="secondary-button hidden sm:inline-flex">Save</button>
+          <button id="export-button" class="primary-button">Save / Export</button>
+        </div>
+      </header>
+
+      <main
+        class="grid min-h-0 flex-1 grid-cols-[260px_minmax(320px,1fr)_300px] max-lg:grid-cols-[230px_minmax(320px,1fr)] max-md:grid-cols-1"
+      >
+        <aside
+          class="panel-border flex min-h-0 flex-col bg-panel max-md:hidden"
+          aria-label="Components and layers"
+        >
+          <div class="panel-tabs" role="tablist">
+            <button class="panel-tab is-active" data-left-tab="blocks" role="tab">Blocks</button>
+            <button class="panel-tab" data-left-tab="layers" role="tab">Layers</button>
+          </div>
+          <div id="blocks-panel" class="min-h-0 flex-1 overflow-y-auto p-4"></div>
+          <div id="layers-panel" class="hidden min-h-0 flex-1 overflow-y-auto p-3"></div>
+        </aside>
+
+        <section class="canvas-workspace" aria-label="Website canvas workspace">
+          <div class="canvas-ruler">
+            <span id="viewport-label">Responsive desktop</span>
+            <span id="selection-breadcrumb">Page</span>
+          </div>
+          <div class="canvas-scroll">
+            <div id="canvas-shell" class="canvas-shell" data-viewport="base">
+              <div id="canvas" class="canvas" tabindex="0" aria-label="Website canvas"></div>
+            </div>
+          </div>
+          <div
+            id="context-toolbar"
+            class="context-toolbar hidden"
+            role="toolbar"
+            aria-label="Selected element actions"
+          >
+            <button data-action="move-up" title="Move up">↑</button>
+            <button data-action="move-down" title="Move down">↓</button>
+            <button data-action="duplicate">Duplicate</button>
+            <button data-action="delete" class="text-rose-300">Delete</button>
+          </div>
+        </section>
+
+        <aside
+          class="min-h-0 overflow-y-auto border-l border-line bg-panel max-lg:hidden"
+          aria-label="Properties"
+        >
+          <div id="properties-panel"></div>
+        </aside>
+      </main>
+
+      <footer class="statusbar">
+        <span id="status-message">Choose a template or drag a block into the canvas.</span>
+        <span id="element-count">0 elements</span>
+      </footer>
+    </div>
+
+    <div id="start-screen" class="modal-backdrop">
+      <section class="start-dialog" role="dialog" aria-modal="true" aria-labelledby="start-title">
+        <header class="mb-7 flex items-start justify-between gap-5">
+          <div>
+            <div class="mb-4 flex items-center gap-3">
+              <span class="brand-mark">P</span
+              ><span class="text-sm font-semibold text-violet-200">LOCAL PORTFOLIO BUILDER</span>
+            </div>
+            <h1 id="start-title" class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+              What will you make?
+            </h1>
+            <p class="mt-3 max-w-2xl text-base leading-7 text-slate-400">
+              Start with a flexible portfolio template, then make every detail yours. Your work
+              stays on this computer.
+            </p>
+          </div>
+          <button id="close-start" class="icon-button hidden" aria-label="Close start screen">
+            ×
+          </button>
+        </header>
+        <div class="mb-5 flex flex-wrap gap-2">
+          <button id="open-project-button" class="secondary-button">Open saved project</button>
+          <button id="recover-button" class="secondary-button hidden">Recover autosave</button>
+        </div>
+        <div id="template-grid" class="template-grid"></div>
+      </section>
+    </div>
+
+    <div id="project-picker" class="modal-backdrop hidden">
+      <section
+        class="small-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="project-picker-title"
+      >
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Saved locally</p>
+            <h2 id="project-picker-title">Open a project</h2>
+          </div>
+          <button class="icon-button" data-close="project-picker" aria-label="Close">×</button>
+        </div>
+        <div id="project-list" class="grid gap-2"></div>
+      </section>
+    </div>
+    <div id="settings-modal" class="modal-backdrop hidden">
+      <section class="wide-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow">Design system & discovery</p>
+            <h2 id="settings-title">Website settings</h2>
+          </div>
+          <button class="icon-button" data-close="settings-modal" aria-label="Close">×</button>
+        </div>
+        <div id="settings-form"></div>
+      </section>
+    </div>
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden bg-[#080a0f]">
+      <div class="flex h-14 items-center justify-between border-b border-line px-4">
+        <span class="text-sm font-semibold">Website preview</span>
+        <div class="flex items-center gap-2">
+          <a id="preview-new-tab" class="secondary-button" target="_blank" rel="noopener"
+            >Open in new tab</a
+          ><button id="close-preview" class="secondary-button">Back to editor</button>
+        </div>
+      </div>
+      <iframe
+        id="preview-frame"
+        title="Website preview"
+        class="h-[calc(100%-3.5rem)] w-full border-0 bg-white"
+      ></iframe>
+    </div>
+    <div id="export-modal" class="modal-backdrop hidden">
+      <section class="wide-dialog" role="dialog" aria-modal="true" aria-labelledby="export-title">
+        <div class="dialog-header">
+          <div>
+            <p class="eyebrow text-emerald-300">Website exported successfully</p>
+            <h2 id="export-title">Your index.html is ready.</h2>
+          </div>
+          <button class="icon-button" data-close="export-modal" aria-label="Close">×</button>
+        </div>
+        <div id="export-summary"></div>
+        <hr class="my-6 border-line" />
+        <h3 class="text-xl font-semibold text-white">Saan mo gustong i-deploy ang website?</h3>
+        <p class="mt-2 text-sm text-slate-400">
+          Choose a platform for step-by-step instructions. Nothing will be uploaded automatically.
+        </p>
+        <div id="deployment-options" class="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4"></div>
+        <div id="deployment-instructions" class="deployment-instructions hidden"></div>
+      </section>
+    </div>
+    <div id="confirm-modal" class="modal-backdrop hidden">
+      <section
+        class="small-dialog"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+      >
+        <h2 id="confirm-title" class="text-xl font-semibold">Delete selected element?</h2>
+        <p class="mt-2 text-sm text-slate-400">You can undo this action afterward.</p>
+        <div class="mt-6 flex justify-end gap-2">
+          <button class="secondary-button" data-close="confirm-modal">Cancel</button
+          ><button id="confirm-delete" class="danger-button">Delete</button>
+        </div>
+      </section>
+    </div>
+    <div
+      id="toast-region"
+      class="fixed bottom-10 right-4 z-[70] grid w-[min(360px,calc(100%-2rem))] gap-2"
+      aria-live="polite"
+    ></div>
+
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>
