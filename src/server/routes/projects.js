@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 
 const projectSchema = z.object({
-  version: z.literal(1),
+  version: z.union([z.literal(1), z.literal(2)]),
   project: z.object({
     id: z.string().min(1).max(120),
     name: z.string().min(1).max(120),
@@ -11,7 +11,8 @@ const projectSchema = z.object({
   }),
   seo: z.record(z.string(), z.union([z.string(), z.boolean(), z.number()])).optional(),
   theme: z.record(z.string(), z.union([z.string(), z.boolean(), z.number()])).optional(),
-  sections: z.array(z.unknown()).max(100),
+  sections: z.array(z.unknown()).max(100).optional(),
+  pages: z.array(z.unknown()).min(1).max(50).optional(),
   assets: z.array(z.unknown()).max(100).optional(),
 });
 

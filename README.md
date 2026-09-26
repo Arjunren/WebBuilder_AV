@@ -1,6 +1,6 @@
 # Local Portfolio Builder
 
-Local Portfolio Builder is a visual, drag-and-drop portfolio website editor that runs entirely on your laptop. It stores editable projects as structured JSON and exports clean, responsive, standalone `index.html` websites that do not need Node.js after export.
+Local Portfolio Builder is a visual, drag-and-drop portfolio website editor that runs entirely on your laptop. It stores editable projects as structured JSON and exports clean, responsive, multi-page static websites that do not need Node.js after export.
 
 ## Highlights
 
@@ -9,11 +9,14 @@ Local Portfolio Builder is a visual, drag-and-drop portfolio website editor that
 - Safe rich text with paragraphs, bold, and emphasis—without arbitrary HTML execution
 - Content and visual property inspector with desktop, tablet, and mobile overrides
 - Layers navigator, inline text editing, duplicate/delete, undo/redo, and keyboard shortcuts
+- Independent website pages with page switching, rename/delete controls, and one generated HTML file per page
 - Eight starter templates plus a blank canvas
-- Local JSON project saving and browser recovery autosave
+- Local JSON project saving, portable backup/import, and browser recovery autosave
 - PNG/JPEG/WebP asset manager with embedded image export
 - Full-screen generated-site preview
-- Secure, standalone single-file HTML export
+- Direct HTML downloads and a generated-file list after export
+- Built-in usage guide, canvas zoom, and a common accessibility issue checker
+- Phone-friendly editor with bottom-sheet access to blocks, pages, styles, checks, and help
 - Deployment assistant for GitHub Pages, Netlify, Vercel, Cloudflare Pages, cPanel, Apache/Nginx, and local hosting
 
 ## Prerequisites
@@ -48,11 +51,12 @@ The server binds to `127.0.0.1` by default and is not publicly exposed.
 2. Drag blocks from the left panel into the canvas, or click a block for keyboard-friendly insertion.
 3. Select an element to edit content and styles in the right panel.
 4. Switch Desktop, Tablet, and Mobile modes to add breakpoint overrides.
-5. Use Layers to inspect hierarchy and select nested elements.
-6. Save the editable project locally.
-7. Preview the production renderer.
-8. Select **Save / Export** to create `exports/<project-slug>/index.html`.
-9. Choose a platform in the deployment assistant for instructions.
+5. Use **Pages** to add independent pages and **Layers** to inspect each page hierarchy.
+6. Run the accessibility check and use canvas zoom where useful.
+7. Save the editable project locally or download a portable project backup.
+8. Preview the production renderer.
+9. Select **Save / Export** to create `exports/<project-slug>/index.html` plus one `<page-slug>.html` file for each additional page.
+10. Download the generated HTML files or choose a platform in the deployment assistant for instructions.
 
 Project JSON and final site HTML are intentionally separate. Opening an exported site does not include or expose the editor.
 
@@ -95,7 +99,7 @@ src/
   client/                 editor UI and browser modules
     js/components/        block catalog and factories
     js/editor/            canvas rendering and drag/drop
-    js/panels/            properties and layers
+    js/panels/            properties, layers, and pages
     js/state/             serializable state and history
     js/storage/           local API client
   server/                 localhost Express server
@@ -114,7 +118,7 @@ exports/                  generated static sites (ignored)
 - **Image rejected:** use a real PNG, JPEG, or WebP file under 5 MB. SVG and HTML uploads are rejected.
 - **Export fails:** correct any unsafe URL shown by the validation message, then retry.
 - **Contact form does not email:** configure a trusted external form endpoint. Static HTML cannot securely send email by itself.
-- **Large export:** embedded images make the single HTML file larger. Resize/compress images before uploading.
+- **Large export:** embedded images make each generated HTML file larger. Resize/compress images before uploading.
 
 See [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), and [DEPLOYMENT.md](DEPLOYMENT.md) for deeper guidance.
 

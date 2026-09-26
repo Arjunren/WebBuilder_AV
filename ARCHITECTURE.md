@@ -7,7 +7,7 @@ The application has three deliberately separate layers:
 ```text
 Structured project JSON
         ├──> Editor renderer ──> selectable, draggable canvas
-        └──> Export renderer ──> standalone production index.html
+        └──> Export renderer ──> standalone production HTML files
 ```
 
 The browser editor is a Vite-built ES module application styled with Tailwind CSS. A small Express server provides constrained project, image-upload, preview, and export endpoints. No database or cloud service is required.
@@ -16,21 +16,20 @@ When a browser supports the proposed WebMCP API, the editor progressively regist
 
 ## Document model
 
-Every project uses schema version `1` and contains metadata, SEO settings, theme tokens, a component tree, and embedded asset records. Components have stable IDs, a supported `type`, plain serializable content, breakpoint style maps, and children.
+Every project uses schema version `2` and contains metadata, SEO settings, theme tokens, one or more pages, and embedded asset records. Each page owns a component tree. Components have stable IDs, a supported `type`, plain serializable content, breakpoint style maps, and children. Version 1 files are migrated in memory when opened so existing work is preserved.
 
 ```json
 {
-  "version": 1,
+  "version": 2,
   "project": { "id": "project_...", "name": "Portfolio", "slug": "portfolio" },
   "seo": {},
   "theme": {},
-  "sections": [
+  "pages": [
     {
-      "id": "heading_...",
-      "type": "heading",
-      "content": { "text": "Hello", "level": "h1" },
-      "styles": { "base": {}, "tablet": {}, "mobile": {} },
-      "children": []
+      "id": "page_...",
+      "name": "Home",
+      "slug": "index",
+      "sections": []
     }
   ],
   "assets": []
@@ -49,7 +48,7 @@ Drag-and-drop uses the native HTML drag data transfer API. New library blocks ca
 
 ## Export renderer
 
-The server-side production renderer receives validated project JSON and emits:
+The server-side production renderer receives validated project JSON and emits one file per page. The home page becomes `index.html`; additional pages use their safe slugs. Each file includes:
 
 - semantic elements for supported components;
 - escaped text and attributes;
@@ -58,11 +57,11 @@ The server-side production renderer receives validated project JSON and emits:
 - metadata, theme tokens, and an embedded favicon;
 - no editor controls, drag attributes, history, or project JSON.
 
-Uploaded raster images are Data URLs, enabling the default single-file export. The editor warns on images above 1 MB.
+Uploaded raster images are Data URLs, so every generated page remains portable without an asset directory. The editor warns on images above 1 MB.
 
 ## State, history, and autosave
 
-`EditorStore` owns the active document, selection, viewport, save state, and bounded history. Mutations record serialized snapshots with a maximum of 60 undo entries. Undo and redo restore the complete deterministic document state.
+`EditorStore` owns the active document, active page, selection, viewport, save state, and bounded history. Mutations record serialized snapshots with a maximum of 60 undo entries. Undo and redo restore the complete deterministic document state.
 
 A debounced browser autosave stores a recovery copy in `localStorage`. Explicit saves atomically write structured JSON through the localhost API. A successful explicit save clears the recovery copy so stale recovery data cannot silently replace a saved project.
 
@@ -82,16 +81,17 @@ The server owns two roots: `data/projects` and `exports`. Browser requests suppl
 
 ## APIs
 
-| Method | Route                 | Purpose                                       |
-| ------ | --------------------- | --------------------------------------------- |
-| GET    | `/api/projects`       | list saved project metadata                   |
-| POST   | `/api/projects`       | validate and create/save a project            |
-| GET    | `/api/projects/:id`   | reopen one project                            |
-| PUT    | `/api/projects/:id`   | update a matching project                     |
-| DELETE | `/api/projects/:id`   | delete one controlled project file            |
-| POST   | `/api/assets`         | validate and return one embedded raster asset |
-| POST   | `/api/export/preview` | render production HTML without writing it     |
-| POST   | `/api/export`         | validate, render, and write standalone HTML   |
+| Method | Route                        | Purpose                                         |
+| ------ | ---------------------------- | ----------------------------------------------- |
+| GET    | `/api/projects`              | list saved project metadata                     |
+| POST   | `/api/projects`              | validate and create/save a project              |
+| GET    | `/api/projects/:id`          | reopen one project                              |
+| PUT    | `/api/projects/:id`          | update a matching project                       |
+| DELETE | `/api/projects/:id`          | delete one controlled project file              |
+| POST   | `/api/assets`                | validate and return one embedded raster asset   |
+| POST   | `/api/export/preview`        | render one selected page without writing it     |
+| POST   | `/api/export`                | validate and render every page to static HTML   |
+| GET    | `/api/export/:slug/download` | download the generated `index.html` entry point |
 
 All payloads have size limits and predictable JSON errors. There is no generic filesystem or command endpoint.
 

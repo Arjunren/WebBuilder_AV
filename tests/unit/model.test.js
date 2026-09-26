@@ -7,6 +7,7 @@ import {
   insertNode,
   isSafeUrl,
   moveNode,
+  normalizeProject,
   removeNode,
   resolveStyles,
   slugify,
@@ -25,10 +26,23 @@ describe('document model', () => {
   it('creates valid versioned projects and components', () => {
     const project = createProject('My Portfolio');
     const heading = createComponent('heading');
-    insertNode(project.sections, heading);
-    expect(project.version).toBe(1);
-    expect(findNode(project.sections, heading.id)?.node.type).toBe('heading');
+    insertNode(project.pages[0].sections, heading);
+    expect(project.version).toBe(2);
+    expect(findNode(project.pages[0].sections, heading.id)?.node.type).toBe('heading');
     expect(validateProject(project)).toEqual({ valid: true, errors: [] });
+  });
+
+  it('migrates saved version 1 projects without losing sections', () => {
+    const heading = createComponent('heading');
+    const migrated = normalizeProject({
+      ...createProject('Legacy'),
+      version: 1,
+      sections: [heading],
+      pages: undefined,
+    });
+    expect(migrated.version).toBe(2);
+    expect(migrated.pages[0].slug).toBe('index');
+    expect(migrated.pages[0].sections[0].id).toBe(heading.id);
   });
 
   it('deletes and reorders nested components', () => {

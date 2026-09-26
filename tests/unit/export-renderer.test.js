@@ -9,7 +9,7 @@ describe('export renderer', () => {
     const heading = createComponent('heading');
     heading.content.text = 'Hello portfolio';
     section.children.push(heading);
-    project.sections.push(section);
+    project.pages[0].sections.push(section);
     const html = renderExport(project);
     expect(html).toContain('<!DOCTYPE html>');
     expect(html).toContain('<section');
@@ -23,7 +23,7 @@ describe('export renderer', () => {
     const heading = createComponent('heading');
     heading.content.text = '<img src=x onerror=alert(1)>';
     project.theme.customCss = '</style><script>alert(1)</script>';
-    project.sections.push(heading);
+    project.pages[0].sections.push(heading);
     const html = renderExport(project);
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).not.toContain('<script>alert(1)</script>');
@@ -33,7 +33,7 @@ describe('export renderer', () => {
     const project = createProject('Rich text test');
     const richText = createComponent('richText');
     richText.content.text = 'A **strong** idea with *detail*.\n\n<img onerror="bad">';
-    project.sections.push(richText);
+    project.pages[0].sections.push(richText);
     const html = renderExport(project);
     expect(html).toContain('<strong>strong</strong>');
     expect(html).toContain('<em>detail</em>');

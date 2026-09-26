@@ -51,8 +51,8 @@ export class LayersPanel {
     heading.className = 'mb-3 flex items-center justify-between px-2';
     heading.innerHTML =
       '<span class="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Page structure</span>';
-    this.element.append(heading, this.renderNodes(this.store.project?.sections || []));
-    if (!this.store.project?.sections.length) {
+    this.element.append(heading, this.renderNodes(this.store.sections()));
+    if (!this.store.sections().length) {
       const empty = document.createElement('p');
       empty.className = 'p-3 text-sm leading-6 text-slate-500';
       empty.textContent = 'Your page layers will appear here as you add blocks.';

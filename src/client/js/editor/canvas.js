@@ -49,11 +49,11 @@ export class CanvasController {
       let parentId = null;
       let index = null;
       if (targetElement) {
-        const target = findNode(this.store.project.sections, targetElement.dataset.nodeId);
+        const target = findNode(this.store.sections(), targetElement.dataset.nodeId);
         if (targetElement.classList.contains('drop-inside')) parentId = target.node.id;
         else {
           parentId = target.parent?.id || null;
-          const siblings = target.parent?.children || this.store.project.sections;
+          const siblings = target.parent?.children || this.store.sections();
           index = siblings.findIndex((item) => item.id === target.node.id);
         }
       }
@@ -73,7 +73,7 @@ export class CanvasController {
 
   render() {
     this.element.replaceChildren();
-    if (!this.store.project.sections.length) {
+    if (!this.store.sections().length) {
       const empty = document.createElement('div');
       empty.className = 'canvas-empty';
       empty.innerHTML =
@@ -93,6 +93,6 @@ export class CanvasController {
           'Edit text',
         ),
     };
-    for (const node of this.store.project.sections) this.element.append(renderNode(node, context));
+    for (const node of this.store.sections()) this.element.append(renderNode(node, context));
   }
 }

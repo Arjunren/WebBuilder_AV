@@ -43,7 +43,8 @@ export function registerWebMcpTools(store) {
       return {
         name: store.project?.project?.name || '',
         viewport: store.viewport,
-        rootSections: store.project?.sections?.length || 0,
+        rootSections: store.sections().length,
+        pages: store.project?.pages?.length || 0,
         totalElements: store.elementCount(),
         saved: store.saved,
       };
@@ -71,7 +72,7 @@ export function registerWebMcpTools(store) {
         added: true,
         id: block.id,
         type: input.type,
-        rootSections: store.project.sections.length,
+        rootSections: store.sections().length,
       };
     },
   });

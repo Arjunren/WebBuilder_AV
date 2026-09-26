@@ -37,11 +37,11 @@ export const api = {
   },
   exportProject: (project) =>
     request('/api/export', { method: 'POST', body: JSON.stringify(project) }),
-  previewProject: async (project) => {
+  previewProject: async (project, pageId) => {
     const response = await fetch('/api/export/preview', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(project),
+      body: JSON.stringify({ project, pageId }),
     });
     if (!response.ok) throw new Error('Preview could not be generated.');
     return response.text();

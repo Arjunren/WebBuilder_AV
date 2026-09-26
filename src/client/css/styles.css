@@ -93,6 +93,15 @@
   .canvas-ruler {
     @apply flex h-9 shrink-0 items-center justify-between border-b border-line bg-[#12161f]/95 px-4 text-xs font-medium text-slate-500;
   }
+  .zoom-controls {
+    @apply flex items-center gap-1 rounded-lg border border-line bg-ink px-1 text-slate-400;
+  }
+  .zoom-controls button {
+    @apply h-6 w-6 rounded text-sm hover:bg-white/10 hover:text-white disabled:opacity-30;
+  }
+  .zoom-controls span {
+    @apply min-w-10 text-center text-[11px];
+  }
   .canvas-scroll {
     @apply flex min-h-0 flex-1 items-start justify-center overflow-auto p-8 max-md:p-3;
   }
@@ -192,6 +201,12 @@
   .statusbar {
     @apply flex h-7 shrink-0 items-center justify-between border-t border-line bg-[#12161f] px-4 text-xs text-slate-500;
   }
+  .creator-credit {
+    @apply inline-flex items-center gap-1.5 text-slate-400 transition hover:text-violet-300;
+  }
+  .creator-credit svg {
+    @apply h-3.5 w-3.5;
+  }
   .property-header {
     @apply sticky top-0 z-10 border-b border-line bg-panel p-4;
   }
@@ -277,6 +292,15 @@
   .project-card {
     @apply flex items-center justify-between gap-3 rounded-xl border border-line bg-white/5 p-4 text-left hover:border-violet-400;
   }
+  .page-card {
+    @apply mb-2 flex items-center gap-2 rounded-xl border border-line bg-white/5 p-3 transition hover:border-slate-500;
+  }
+  .page-card.is-active {
+    @apply border-violet-400 bg-violet-500/10;
+  }
+  .page-action {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white;
+  }
   .deployment-choice {
     @apply rounded-xl border border-line bg-white/5 p-3 text-sm font-semibold text-slate-200 hover:border-violet-400 hover:bg-violet-500/10;
   }
@@ -293,6 +317,39 @@
     @apply rounded-xl border border-line bg-[#1b202a] px-4 py-3 text-sm text-slate-100 shadow-2xl;
     animation: toast-in 0.2s ease-out;
   }
+  .instruction-list {
+    @apply grid gap-3 sm:grid-cols-2;
+    counter-reset: instructions;
+  }
+  .instruction-list li {
+    @apply relative grid min-h-28 gap-1 rounded-2xl border border-line bg-white/5 p-4 pl-14 text-sm text-slate-400;
+    counter-increment: instructions;
+  }
+  .instruction-list li::before {
+    content: counter(instructions);
+    @apply absolute left-4 top-4 flex h-7 w-7 items-center justify-center rounded-full bg-violet-500/20 font-bold text-violet-200;
+  }
+  .instruction-list strong {
+    @apply text-base text-white;
+  }
+  .audit-list {
+    @apply grid gap-2;
+  }
+  .audit-list li,
+  .audit-success {
+    @apply grid gap-1 rounded-xl border border-line bg-white/5 p-4 text-sm text-slate-400;
+  }
+  .audit-list strong,
+  .audit-success strong {
+    @apply text-slate-100;
+  }
+  .audit-success {
+    @apply border-emerald-500/30 bg-emerald-500/10 text-emerald-100;
+  }
+  .mobile-dock,
+  .mobile-panel-backdrop {
+    display: none;
+  }
 }
 
 @keyframes toast-in {
@@ -303,8 +360,67 @@
 }
 
 @media (max-width: 767px) {
+  #mobile-panel-backdrop.hidden {
+    display: none !important;
+    pointer-events: none;
+  }
+  #app {
+    padding-bottom: 56px;
+  }
   .editor-topbar {
     @apply gap-2 px-2;
+  }
+  .editor-topbar .primary-button {
+    @apply px-3;
+  }
+  .editor-sidebar.mobile-open {
+    display: flex !important;
+    position: fixed;
+    z-index: 61;
+    inset: auto 8px 64px;
+    max-height: min(72vh, 620px);
+    border: 1px solid #303644;
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55);
+  }
+  #properties-sidebar.mobile-open {
+    display: block !important;
+    overflow-y: auto;
+  }
+  .mobile-panel-backdrop:not(.hidden) {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 60;
+    background: rgba(8, 10, 15, 0.72);
+  }
+  .mobile-dock {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    position: fixed;
+    z-index: 62;
+    inset: auto 0 0;
+    height: 56px;
+    border-top: 1px solid #303644;
+    background: #12161f;
+    padding: 6px 8px;
+  }
+  .mobile-dock button {
+    @apply rounded-lg text-xs font-semibold text-slate-300 hover:bg-white/10;
+  }
+  .statusbar {
+    @apply px-2;
+  }
+  .statusbar > span:first-child,
+  .creator-credit {
+    display: none;
+  }
+  .canvas-ruler {
+    @apply px-2;
+  }
+  #selection-breadcrumb {
+    display: none;
   }
   .canvas-shell[data-viewport='base'],
   .canvas-shell[data-viewport='tablet'] {

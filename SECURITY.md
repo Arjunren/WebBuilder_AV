@@ -48,7 +48,9 @@ Raster images are embedded unchanged. For public production use, add image decod
 
 ## Project validation
 
-API envelopes are schema-validated with Zod. Model validation checks version, project name, section arrays, component types, duplicate IDs, and supported URLs. The production renderer additionally allowlists CSS properties and filters values.
+API envelopes are schema-validated with Zod. Model validation checks version, project name, page IDs and slugs, section arrays, component types, duplicate IDs, supported URLs, and component count/nesting limits. Imported project backups pass the same model validation before entering editor state. The production renderer additionally allowlists CSS properties and filters values.
+
+The accessibility report is a focused authoring aid, not a security boundary or certification. It checks common structural issues such as missing H1 headings, heading-level jumps, empty image alternatives, and unlabeled links/buttons.
 
 ## Dependency security
 

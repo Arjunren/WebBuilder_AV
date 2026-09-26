@@ -52,3 +52,38 @@ test('supports keyboard duplicate and delete confirmation', async ({ page }) => 
   await page.locator('#confirm-delete').click();
   await expect(page.locator('[data-node-type="heading"]')).toHaveCount(1);
 });
+
+test('adds pages, opens guidance, audits content, and works from the mobile dock', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Blank canvas' }).click();
+
+  await page.getByRole('button', { name: 'How to use', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'How to use the builder' })).toBeVisible();
+  await page.locator('[data-close="help-modal"]').click();
+
+  await page.getByRole('button', { name: 'Pages', exact: true }).last().click();
+  await expect(page.locator('#left-sidebar')).toHaveClass(/mobile-open/);
+  page.once('dialog', (dialog) => dialog.accept('Case Studies'));
+  await page.getByRole('button', { name: '+ Add' }).click();
+  await expect(page.locator('#pages-panel')).toContainText('Case Studies');
+  await page.locator('#mobile-panel-backdrop').click({ position: { x: 2, y: 2 } });
+
+  await page.getByRole('button', { name: 'Blocks', exact: true }).last().click();
+  await page.locator('[data-block-type="heading"]').click();
+  await expect(page.locator('#canvas')).toContainText('A clear, memorable heading');
+
+  await page.getByRole('button', { name: 'Check' }).click();
+  await expect(page.getByRole('heading', { name: 'Accessibility report' })).toBeVisible();
+  await expect(page.locator('#audit-results')).toContainText('Add one H1 heading');
+  await page.locator('[data-close="audit-modal"]').click();
+
+  await page.locator('#zoom-out').click();
+  await expect(page.locator('#zoom-label')).toHaveText('90%');
+  await expect(page.locator('.creator-credit')).toHaveAttribute(
+    'href',
+    'https://github.com/ArjunrenVon',
+  );
+});

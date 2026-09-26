@@ -1,23 +1,27 @@
 import '../css/styles.css';
 import { templates, getTemplate } from '../../shared/templates.js';
-import { findNode } from '../../shared/model.js';
+import { findNode, normalizeProject, validateProject } from '../../shared/model.js';
 import { EditorStore } from './state/store.js';
 import { CanvasController } from './editor/canvas.js';
 import { groups } from './components/catalog.js';
 import { createBlock } from './components/factory.js';
 import { LayersPanel } from './panels/layers.js';
+import { PagesPanel } from './panels/pages.js';
 import { PropertiesPanel } from './panels/properties.js';
 import { api } from './storage/api.js';
 import { $, $$, el, toast, showModal, hideModal } from './utils/dom.js';
 import { renderSettings } from './ui/settings.js';
 import { deploymentGuides } from './ui/deployment.js';
+import { auditProject } from './ui/accessibility.js';
 import { registerWebMcpTools } from './webmcp.js';
 
 const store = new EditorStore();
 const canvas = new CanvasController(store, $('#canvas'));
 const layers = new LayersPanel(store, $('#layers-panel'));
+const pages = new PagesPanel(store, $('#pages-panel'));
 const properties = new PropertiesPanel(store, $('#properties-panel'), uploadAsset);
 let previewBlobUrl = null;
+let canvasZoom = 100;
 
 function renderBlocks() {
   const panel = $('#blocks-panel');
@@ -77,6 +81,7 @@ function renderAll() {
   if (!store.project) return;
   canvas.render();
   layers.render();
+  pages.render();
   properties.render();
   $('#project-name').textContent = store.project.project.name;
   $('#save-label').textContent = store.saved ? 'Saved' : 'Unsaved changes';
@@ -86,7 +91,8 @@ function renderAll() {
   $('#canvas-shell').dataset.viewport = store.viewport;
   $('#context-toolbar').classList.toggle('hidden', !store.selectedId);
   const selected = store.selected();
-  $('#selection-breadcrumb').textContent = selected ? `Page / ${selected.name}` : 'Page';
+  const pageName = store.activePage()?.name || 'Page';
+  $('#selection-breadcrumb').textContent = selected ? `${pageName} / ${selected.name}` : pageName;
 }
 
 store.addEventListener('project', renderAll);
@@ -97,8 +103,10 @@ store.addEventListener('selection', () => {
   properties.render();
   $('#context-toolbar').classList.toggle('hidden', !store.selectedId);
   const selected = store.selected();
-  $('#selection-breadcrumb').textContent = selected ? `Page / ${selected.name}` : 'Page';
+  const pageName = store.activePage()?.name || 'Page';
+  $('#selection-breadcrumb').textContent = selected ? `${pageName} / ${selected.name}` : pageName;
 });
+store.addEventListener('page', renderAll);
 store.addEventListener('viewport', () => {
   canvas.render();
   properties.render();
@@ -139,7 +147,7 @@ async function uploadAsset(file, nodeId) {
     store.mutate('Upload image', (project) => {
       project.assets ||= [];
       project.assets.push(asset);
-      const node = findNode(project.sections, nodeId)?.node;
+      const node = findNode(store.sections(), nodeId)?.node;
       if (node) node.content.src = asset.dataUrl;
     });
     toast(warning || 'Image added to the asset library.');
@@ -193,7 +201,7 @@ async function openProjectPicker() {
 
 async function previewProject() {
   try {
-    const html = await api.previewProject(store.project);
+    const html = await api.previewProject(store.project, store.activePageId);
     if (previewBlobUrl) URL.revokeObjectURL(previewBlobUrl);
     previewBlobUrl = URL.createObjectURL(new Blob([html], { type: 'text/html' }));
     $('#preview-frame').src = previewBlobUrl;
@@ -216,8 +224,9 @@ function renderExportResult(result) {
   });
   for (const [label, value] of [
     ['Project', store.project.project.name],
-    ['Export file', result.file],
-    ['File size', size],
+    ['Entry file', result.file],
+    ['Pages', `${result.files?.length || 1} HTML file${result.files?.length === 1 ? '' : 's'}`],
+    ['Entry size', size],
     ['Exported', new Date(result.exportedAt).toLocaleString()],
   ])
     details.append(
@@ -229,10 +238,22 @@ function renderExportResult(result) {
   const actions = el('div', { class: 'mt-4 flex flex-wrap gap-2' }, [
     el('a', {
       class: 'primary-button',
+      href: result.downloadUrl,
+      download: 'index.html',
+      text: 'Download index.html',
+    }),
+    el('a', {
+      class: 'secondary-button',
       href: result.previewUrl,
       target: '_blank',
       rel: 'noopener',
       text: 'Preview export',
+    }),
+    el('button', {
+      class: 'secondary-button',
+      type: 'button',
+      text: 'Download project backup',
+      onclick: backupProject,
     }),
     el('button', {
       class: 'secondary-button',
@@ -250,7 +271,116 @@ function renderExportResult(result) {
       onclick: exportProject,
     }),
   ]);
-  summary.append(details, actions);
+  const pageFiles = el('div', { class: 'mt-4 rounded-2xl border border-line bg-white/5 p-4' }, [
+    el('p', {
+      class: 'mb-3 text-xs font-bold uppercase tracking-[.14em] text-slate-500',
+      text: 'Generated page files',
+    }),
+    el(
+      'div',
+      { class: 'flex flex-wrap gap-2' },
+      (result.files || []).map((file) =>
+        el('a', {
+          class: 'secondary-button h-9',
+          href: file.previewUrl,
+          download: file.file.split('/').pop(),
+          text: `Download ${file.file.split('/').pop()}`,
+        }),
+      ),
+    ),
+  ]);
+  summary.append(details, actions, pageFiles);
+}
+
+function backupProject() {
+  if (!store.project) return;
+  const blob = new Blob([JSON.stringify(store.project, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `${store.project.project.slug || 'portfolio'}.portfolio.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+  toast('Project backup downloaded.');
+}
+
+async function importProject(file) {
+  if (!file) return;
+  try {
+    if (file.size > 2 * 1024 * 1024) throw new Error('Project backups must be 2 MB or smaller.');
+    const project = normalizeProject(JSON.parse(await file.text()));
+    const validation = validateProject(project);
+    if (!validation.valid) throw new Error(validation.errors.join(' '));
+    store.setProject(project);
+    hideModal('start-screen');
+    toast('Project backup imported. Save it to keep a local copy.');
+  } catch (error) {
+    toast(`Import failed: ${error.message}`, 'error');
+  } finally {
+    $('#import-project-input').value = '';
+  }
+}
+
+function renderAudit() {
+  const report = auditProject(store.project);
+  const results = $('#audit-results');
+  results.replaceChildren();
+  if (!report.issues.length) {
+    results.append(
+      el('div', { class: 'audit-success' }, [
+        el('strong', { text: 'No common issues found.' }),
+        el('p', {
+          text: `${report.checks} automated checks passed. Manual testing is still recommended.`,
+        }),
+      ]),
+    );
+  } else {
+    results.append(
+      el('p', {
+        class: 'mb-4 text-sm text-slate-400',
+        text: `${report.issues.length} item${report.issues.length === 1 ? '' : 's'} to review across ${store.project.pages.length} page${store.project.pages.length === 1 ? '' : 's'}.`,
+      }),
+      el(
+        'ul',
+        { class: 'audit-list' },
+        report.issues.map((issue) =>
+          el('li', {}, [el('strong', { text: issue.page }), el('span', { text: issue.message })]),
+        ),
+      ),
+    );
+  }
+  showModal('audit-modal');
+}
+
+function setZoom(next) {
+  canvasZoom = Math.max(50, Math.min(125, next));
+  $('#canvas-shell').style.zoom = `${canvasZoom}%`;
+  $('#zoom-label').textContent = `${canvasZoom}%`;
+  $('#zoom-out').disabled = canvasZoom === 50;
+  $('#zoom-in').disabled = canvasZoom === 125;
+}
+
+function showLeftTab(tab) {
+  $$('.panel-tab').forEach((item) =>
+    item.classList.toggle('is-active', item.dataset.leftTab === tab),
+  );
+  for (const name of ['blocks', 'layers', 'pages'])
+    $(`#${name}-panel`).classList.toggle('hidden', name !== tab);
+}
+
+function closeMobilePanels() {
+  $$('.editor-sidebar').forEach((panel) => panel.classList.remove('mobile-open'));
+  $('#mobile-panel-backdrop').classList.add('hidden');
+}
+
+function openMobilePanel(name) {
+  closeMobilePanels();
+  if (name === 'properties') $('#properties-sidebar').classList.add('mobile-open');
+  else {
+    showLeftTab(name);
+    $('#left-sidebar').classList.add('mobile-open');
+  }
+  $('#mobile-panel-backdrop').classList.remove('hidden');
 }
 
 async function exportProject() {
@@ -260,7 +390,7 @@ async function exportProject() {
     renderExportResult(result);
     renderDeploymentOptions();
     showModal('export-modal');
-    toast('Standalone index.html created.');
+    toast('Standalone website files created.');
   } catch (error) {
     toast(error.message, 'error');
   }
@@ -292,9 +422,29 @@ function setupEvents() {
   $('#home-button').addEventListener('click', () => showModal('start-screen'));
   $('#close-start').addEventListener('click', () => hideModal('start-screen'));
   $('#open-project-button').addEventListener('click', openProjectPicker);
+  $('#import-project-button').addEventListener('click', () => $('#import-project-input').click());
+  $('#import-project-input').addEventListener('change', (event) =>
+    importProject(event.target.files[0]),
+  );
   $('#save-button').addEventListener('click', () => saveProject());
   $('#export-button').addEventListener('click', exportProject);
   $('#preview-button').addEventListener('click', previewProject);
+  $('#help-button').addEventListener('click', () => showModal('help-modal'));
+  $('#mobile-help-button').addEventListener('click', () => {
+    closeMobilePanels();
+    showModal('help-modal');
+  });
+  $('#audit-button').addEventListener('click', renderAudit);
+  $('#mobile-audit-button').addEventListener('click', () => {
+    closeMobilePanels();
+    renderAudit();
+  });
+  $('#zoom-out').addEventListener('click', () => setZoom(canvasZoom - 10));
+  $('#zoom-in').addEventListener('click', () => setZoom(canvasZoom + 10));
+  $$('[data-mobile-panel]').forEach((button) =>
+    button.addEventListener('click', () => openMobilePanel(button.dataset.mobilePanel)),
+  );
+  $('#mobile-panel-backdrop').addEventListener('click', closeMobilePanels);
   $('#close-preview').addEventListener('click', () => $('#preview-modal').classList.add('hidden'));
   $('#settings-button').addEventListener('click', () => {
     renderSettings(store, $('#settings-form'));
@@ -308,12 +458,7 @@ function setupEvents() {
     }),
   );
   $$('.panel-tab').forEach((button) =>
-    button.addEventListener('click', () => {
-      $$('.panel-tab').forEach((item) => item.classList.remove('is-active'));
-      button.classList.add('is-active');
-      $('#blocks-panel').classList.toggle('hidden', button.dataset.leftTab !== 'blocks');
-      $('#layers-panel').classList.toggle('hidden', button.dataset.leftTab !== 'layers');
-    }),
+    button.addEventListener('click', () => showLeftTab(button.dataset.leftTab)),
   );
   $$('[data-close]').forEach((button) =>
     button.addEventListener('click', () => hideModal(button.dataset.close)),
@@ -387,6 +532,7 @@ function init() {
     });
   }
   store.setProject(getTemplate('blank'));
+  setZoom(100);
   registerWebMcpTools(store);
 }
 

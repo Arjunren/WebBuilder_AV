@@ -1,4 +1,11 @@
-import { escapeHtml, isSafeUrl, resolveStyles, validateProject } from '../../shared/model.js';
+import {
+  escapeHtml,
+  getPage,
+  isSafeUrl,
+  normalizeProject,
+  resolveStyles,
+  validateProject,
+} from '../../shared/model.js';
 
 const numberProperties = new Set([
   'fontSize',
@@ -192,12 +199,26 @@ function sanitizeCustomCss(value = '') {
   return css;
 }
 
-export function renderExport(project) {
+export function renderExport(input, pageId = null) {
+  const project = normalizeProject(input);
   const validation = validateProject(project);
-  if (!validation.valid) throw new Error(validation.errors.join(' '));
+  if (!validation.valid) {
+    const error = new Error(validation.errors.join(' '));
+    error.status = 400;
+    throw error;
+  }
+  const page = getPage(project, pageId);
+  if (!page) {
+    const error = new Error('The requested page does not exist.');
+    error.status = 404;
+    throw error;
+  }
   const seo = project.seo || {};
   const theme = project.theme || {};
-  const title = seo.title || project.project.name;
+  const title =
+    page.slug === 'index'
+      ? seo.title || project.project.name
+      : `${page.name} — ${seo.title || project.project.name}`;
   const favicon = isSafeUrl(seo.favicon, { allowDataImages: true })
     ? seo.favicon
     : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"%3E%3Crect width="64" height="64" rx="16" fill="%236d4aff"/%3E%3Cpath d="M18 42V18h15c9 0 14 4 14 12s-5 12-14 12H18zm9-8h7c3 0 5-1 5-4s-2-4-5-4h-7v8z" fill="white"/%3E%3C/svg%3E';
@@ -209,8 +230,8 @@ export function renderExport(project) {
     isSafeUrl(seo.ogImage, { allowDataImages: true }) && seo.ogImage
       ? `<meta property="og:image" content="${escapeHtml(seo.ogImage)}">`
       : '';
-  const body = project.sections.map(renderNode).join('');
-  const css = collectCss(project.sections);
+  const body = page.sections.map(renderNode).join('');
+  const css = collectCss(page.sections);
   const buttonRadius =
     theme.buttonStyle === 'pill' ? '999px' : theme.buttonStyle === 'square' ? '0' : 'var(--radius)';
   return `<!DOCTYPE html>

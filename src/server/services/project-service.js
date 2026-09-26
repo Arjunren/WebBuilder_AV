@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { safeChildPath } from '../utils/path-security.js';
-import { slugify, validateProject } from '../../shared/model.js';
+import { normalizeProject, slugify, validateProject } from '../../shared/model.js';
 
 export class ProjectService {
   constructor(root) {
@@ -30,17 +30,17 @@ export class ProjectService {
 
   async get(id) {
     const file = safeChildPath(this.root, id, '.json');
-    return JSON.parse(await fs.readFile(file, 'utf8'));
+    return normalizeProject(JSON.parse(await fs.readFile(file, 'utf8')));
   }
 
   async save(project) {
-    const result = validateProject(project);
+    const clean = normalizeProject(project);
+    const result = validateProject(clean);
     if (!result.valid) {
       const error = new Error(result.errors.join(' '));
       error.status = 400;
       throw error;
     }
-    const clean = structuredClone(project);
     clean.project.slug = slugify(clean.project.slug || clean.project.name);
     clean.project.updatedAt = new Date().toISOString();
     const file = safeChildPath(this.root, clean.project.id || clean.project.slug, '.json');

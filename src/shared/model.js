@@ -175,7 +175,7 @@ export function createComponent(type, overrides = {}) {
 
 export function createProject(name = 'Untitled Portfolio') {
   return {
-    version: 1,
+    version: 2,
     project: {
       id: createId('project'),
       name,
@@ -205,9 +205,55 @@ export function createProject(name = 'Untitled Portfolio') {
       spacingScale: '1',
       customCss: '',
     },
-    sections: [],
+    pages: [
+      {
+        id: createId('page'),
+        name: 'Home',
+        slug: 'index',
+        sections: [],
+      },
+    ],
     assets: [],
   };
+}
+
+export function normalizeProject(input) {
+  const project = structuredClone(input);
+  if (project?.version === 1 && Array.isArray(project.sections)) {
+    project.version = 2;
+    project.pages = [
+      {
+        id: createId('page'),
+        name: 'Home',
+        slug: 'index',
+        sections: project.sections,
+      },
+    ];
+    delete project.sections;
+  }
+  if (project?.version === 2 && !Array.isArray(project.pages)) project.pages = [];
+  return project;
+}
+
+export function getProjectPages(project) {
+  return Array.isArray(project?.pages) ? project.pages : [];
+}
+
+export function getPage(project, pageId = null) {
+  const pages = getProjectPages(project);
+  return pages.find((page) => page.id === pageId) || pages[0] || null;
+}
+
+export function createPage(name = 'New page', existingPages = []) {
+  const baseSlug = slugify(name) === 'untitled' ? 'page' : slugify(name);
+  const used = new Set(existingPages.map((page) => page.slug));
+  let slug = baseSlug === 'index' ? 'page' : baseSlug;
+  let suffix = 2;
+  while (used.has(slug)) {
+    slug = `${baseSlug}-${suffix}`;
+    suffix += 1;
+  }
+  return { id: createId('page'), name, slug, sections: [] };
 }
 
 export function walkNodes(nodes, visitor, parent = null) {
@@ -301,12 +347,30 @@ export function escapeHtml(value = '') {
 
 export function validateProject(project) {
   const errors = [];
-  if (!project || project.version !== 1) errors.push('Unsupported or missing project version.');
+  if (!project || ![1, 2].includes(project.version))
+    errors.push('Unsupported or missing project version.');
   if (!project?.project?.name?.trim()) errors.push('Project name is required.');
-  if (!Array.isArray(project?.sections)) errors.push('Project sections must be an array.');
+  const pages =
+    project?.version === 1
+      ? [{ id: 'legacy', name: 'Home', slug: 'index', sections: project?.sections }]
+      : project?.pages;
+  if (!Array.isArray(pages) || !pages.length)
+    errors.push('Project pages must be a non-empty array.');
   const ids = new Set();
-  const validateNodes = (nodes) => {
+  const pageIds = new Set();
+  const pageSlugs = new Set();
+  let nodeCount = 0;
+  const validateNodes = (nodes, depth = 0) => {
+    if (depth > 30) {
+      errors.push('Component nesting cannot exceed 30 levels.');
+      return;
+    }
     for (const node of nodes) {
+      nodeCount += 1;
+      if (nodeCount > 5000) {
+        errors.push('Projects cannot contain more than 5,000 components.');
+        return;
+      }
       if (!node || typeof node !== 'object' || Array.isArray(node)) {
         errors.push('Every component must be an object.');
         continue;
@@ -325,10 +389,28 @@ export function validateProject(project) {
         errors.push(`Unsafe image URL in ${node.name}.`);
       if (!Array.isArray(node.children))
         errors.push(`Component ${node.name || node.id} requires a children array.`);
-      else validateNodes(node.children);
+      else if (node.children.length > 200)
+        errors.push(`Component ${node.name || node.id} cannot contain more than 200 children.`);
+      else validateNodes(node.children, depth + 1);
     }
   };
-  if (Array.isArray(project?.sections)) validateNodes(project.sections);
+  if (Array.isArray(pages)) {
+    for (const page of pages) {
+      if (!page?.name?.trim()) errors.push('Every page requires a name.');
+      if (typeof page?.id !== 'string' || !/^[a-z0-9_-]{1,160}$/i.test(page.id))
+        errors.push('Every page requires a safe ID.');
+      if (pageIds.has(page?.id)) errors.push(`Duplicate page ID: ${page.id}.`);
+      pageIds.add(page?.id);
+      if (!/^(index|[a-z0-9]+(?:-[a-z0-9]+)*)$/.test(page?.slug || ''))
+        errors.push(`Page ${page?.name || ''} requires a safe slug.`);
+      if (pageSlugs.has(page?.slug)) errors.push(`Duplicate page slug: ${page.slug}.`);
+      pageSlugs.add(page?.slug);
+      if (!Array.isArray(page?.sections))
+        errors.push(`Page ${page?.name || ''} requires sections.`);
+      else validateNodes(page.sections);
+    }
+    if (!pages.some((page) => page.slug === 'index')) errors.push('A home page is required.');
+  }
   return { valid: errors.length === 0, errors };
 }
 

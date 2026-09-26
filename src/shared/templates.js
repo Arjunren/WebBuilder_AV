@@ -150,7 +150,7 @@ function makeStarter({ name, role, intro, accent = '#6d4aff', projectLabel = 'Se
     { backgroundColor: '#111827' },
   );
   contact.content = { anchorId: 'contact' };
-  project.sections = [navbar, hero, about, projects, contact];
+  project.pages[0].sections = [navbar, hero, about, projects, contact];
   return project;
 }
 
