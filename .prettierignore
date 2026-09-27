@@ -4,3 +4,4 @@ coverage
 exports
 data
 package-lock.json
+src-tauri/gen

@@ -10,7 +10,12 @@ Structured project JSON
         └──> Export renderer ──> standalone production HTML files
 ```
 
-The browser editor is a Vite-built ES module application styled with Tailwind CSS. A small Express server provides constrained project, image-upload, preview, and export endpoints. No database or cloud service is required.
+The editor is a Vite-built ES module application styled with Tailwind CSS. It has two runtime adapters:
+
+- the localhost web runtime uses a small Express server for constrained project, image-upload, preview, and export endpoints;
+- the Tauri Windows/Android runtime stores projects in the installed app's private IndexedDB profile and uses native file dialogs for exports and backups.
+
+Both runtimes use the same project schema and shared export renderer. No database, Supabase project, account, or cloud service is required.
 
 When a browser supports the proposed WebMCP API, the editor progressively registers tools for reading the active project summary, adding supported portfolio sections, and switching preview devices. These tools call the same store actions as the visible UI and are absent without browser support.
 
@@ -48,7 +53,7 @@ Drag-and-drop uses the native HTML drag data transfer API. New library blocks ca
 
 ## Export renderer
 
-The server-side production renderer receives validated project JSON and emits one file per page. The home page becomes `index.html`; additional pages use their safe slugs. Each file includes:
+The shared production renderer receives validated project JSON and emits one file per page. The localhost service writes those files below `exports`; an installed application returns the same generated strings to native save dialogs. The home page becomes `index.html`; additional pages use their safe slugs. Each file includes:
 
 - semantic elements for supported components;
 - escaped text and attributes;
@@ -63,7 +68,9 @@ Uploaded raster images are Data URLs, so every generated page remains portable w
 
 `EditorStore` owns the active document, active page, selection, viewport, save state, and bounded history. Mutations record serialized snapshots with a maximum of 60 undo entries. Undo and redo restore the complete deterministic document state.
 
-A debounced browser autosave stores a recovery copy in `localStorage`. Explicit saves atomically write structured JSON through the localhost API. A successful explicit save clears the recovery copy so stale recovery data cannot silently replace a saved project.
+A debounced recovery save stores a working copy in `localStorage`. In localhost mode, explicit saves atomically write structured JSON through the API. In installed-app mode, explicit saves use IndexedDB in the app's WebView profile. A successful explicit save clears the recovery copy so stale recovery data cannot silently replace a saved project.
+
+Uninstalling the native app or clearing its application data can remove IndexedDB. Portable JSON backups remain the user-controlled recovery mechanism.
 
 ## Responsive model
 
@@ -78,6 +85,8 @@ Each smaller viewport inherits larger values unless a property exists in its own
 ## Filesystem boundaries
 
 The server owns two roots: `data/projects` and `exports`. Browser requests supply IDs or slugs, never absolute paths. Names are reduced to safe slugs, resolved against the configured root, and verified to remain beneath it. Project writes use a temporary file followed by an atomic rename.
+
+The Tauri runtime exposes no generic command API. Its capability file grants only the core window defaults, save dialogs, and text-file writes selected through those dialogs. Editor drag-and-drop stays in the WebView by disabling Tauri's native file-drop interception.
 
 ## APIs
 
@@ -94,6 +103,8 @@ The server owns two roots: `data/projects` and `exports`. Browser requests suppl
 | GET    | `/api/export/:slug/download` | download the generated `index.html` entry point |
 
 All payloads have size limits and predictable JSON errors. There is no generic filesystem or command endpoint.
+
+These HTTP routes are not started or bundled as a server process in installed applications. The device adapter implements the equivalent operations locally and performs the same model and image-signature validation.
 
 ## Design decisions
 

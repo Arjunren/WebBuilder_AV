@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createComponent, createProject } from '../../src/shared/model.js';
-import { renderExport } from '../../src/server/services/export-renderer.js';
+import { renderExport } from '../../src/shared/export-renderer.js';
 
 describe('export renderer', () => {
   it('creates standalone semantic HTML without editor metadata', () => {

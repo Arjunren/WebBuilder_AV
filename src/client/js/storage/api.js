@@ -1,3 +1,5 @@
+import { deviceApi, isDeviceStorageMode } from './device.js';
+
 async function request(url, options = {}) {
   const response = await fetch(url, {
     ...options,
@@ -19,7 +21,7 @@ async function request(url, options = {}) {
   return response.json();
 }
 
-export const api = {
+const serverApi = {
   listProjects: () => request('/api/projects'),
   getProject: (id) => request(`/api/projects/${encodeURIComponent(id)}`),
   saveProject: (project) =>
@@ -47,3 +49,6 @@ export const api = {
     return response.text();
   },
 };
+
+export const api = isDeviceStorageMode() ? deviceApi : serverApi;
+export { isDeviceStorageMode, saveTextToDevice } from './device.js';

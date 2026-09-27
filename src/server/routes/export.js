@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { renderExport } from '../services/export-renderer.js';
+import { renderExport } from '../../shared/export-renderer.js';
 
 export function exportRouter(service) {
   const router = Router();

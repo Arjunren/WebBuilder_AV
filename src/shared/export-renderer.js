@@ -5,7 +5,7 @@ import {
   normalizeProject,
   resolveStyles,
   validateProject,
-} from '../../shared/model.js';
+} from './model.js';
 
 const numberProperties = new Set([
   'fontSize',

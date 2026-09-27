@@ -1,12 +1,18 @@
 {
   "name": "local-portfolio-builder",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
-  "description": "A secure localhost visual portfolio website builder with standalone HTML export.",
+  "description": "A secure local-first visual portfolio builder for browsers, Windows, and Android.",
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1 --port 5173\" \"node --watch src/server/server.js\"",
+    "dev:client": "vite --host 127.0.0.1 --port 5173",
     "start": "node src/server/server.js",
+    "app:dev": "tauri dev",
+    "app:build:windows": "tauri build --bundles nsis",
+    "app:init:android": "tauri android init",
+    "app:build:android": "tauri android build --apk",
+    "app:build:android:debug": "tauri android build --apk --debug --target aarch64",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "format": "prettier --write .",
@@ -17,12 +23,16 @@
     "test:integration": "vitest run tests/integration",
     "test:e2e": "playwright test",
     "audit": "npm audit --audit-level=high",
-    "check": "npm run format:check && npm run lint && npm test && npm run build"
+    "check": "npm run format:check && npm run lint && npm test && npm run build",
+    "tauri": "tauri"
   },
   "engines": {
     "node": ">=20"
   },
   "dependencies": {
+    "@tauri-apps/api": "^2.11.1",
+    "@tauri-apps/plugin-dialog": "^2.7.3",
+    "@tauri-apps/plugin-fs": "^2.5.2",
     "express": "5.1.0",
     "helmet": "8.1.0",
     "multer": "2.4.0",
@@ -31,6 +41,7 @@
   "devDependencies": {
     "@eslint/js": "9.36.0",
     "@playwright/test": "1.55.1",
+    "@tauri-apps/cli": "^2.11.5",
     "autoprefixer": "10.4.21",
     "concurrently": "9.2.4",
     "eslint": "9.36.0",

@@ -87,3 +87,24 @@ test('adds pages, opens guidance, audits content, and works from the mobile dock
     'https://github.com/ArjunrenVon',
   );
 });
+
+test('persists and exports projects without the server in device-local mode', async ({ page }) => {
+  await page.goto('/?local=1');
+  await page.getByRole('button', { name: 'Blank canvas' }).click();
+  await page.locator('[data-block-type="heading"]').click();
+  await page.locator('#save-button').click();
+  await expect(page.locator('#save-label')).toContainText('Saved');
+
+  await page.reload();
+  await page.getByRole('button', { name: 'Open saved project' }).click();
+  await page.locator('#project-list .project-card').first().click();
+  await expect(page.locator('#canvas')).toContainText('A clear, memorable heading');
+
+  await page.locator('#export-button').click();
+  await expect(
+    page.getByRole('button', { name: 'Save index.html', exact: true }).first(),
+  ).toBeVisible();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Save index.html', exact: true }).first().click();
+  expect((await download).suggestedFilename()).toBe('index.html');
+});

@@ -2,7 +2,9 @@
 
 ## Philosophy and scope
 
-Local Portfolio Builder is localhost software with no accounts or database. Security controls focus on the actual trust boundaries: untrusted project content, browser-to-server requests, file uploads, filesystem writes, URLs, and generated HTML.
+Local Portfolio Builder is local-first software with no accounts or cloud database. It runs through either a loopback Express service or an installed Tauri WebView. Security controls focus on the actual trust boundaries: untrusted project content, browser-to-server requests, file imports, filesystem writes, URLs, native capabilities, and generated HTML.
+
+Installed-app projects live in device-local IndexedDB. This protects data from unrelated websites, but it is not encryption against another process or administrator with access to the same device account. Use portable backups and device-level disk encryption for sensitive work.
 
 ## Localhost and HTTP protections
 
@@ -14,6 +16,8 @@ Local Portfolio Builder is localhost software with no accounts or database. Secu
 - JSON requests default to a 2 MB limit.
 - Stack traces are not returned to clients.
 - No environment variables or secrets are bundled into browser code.
+
+The installed app does not start the HTTP API. Its restrictive CSP permits only bundled content, local data/blob resources needed for images and previews, and explicit HTTPS actions. Tauri capabilities allow native save dialogs and writes to user-selected text files; no shell, arbitrary command, or unrestricted read capability is enabled.
 
 Do not set `HOST=0.0.0.0` on an untrusted network. If remote access is required, place the application behind an authenticated, TLS-terminating reverse proxy and reassess the threat model.
 
@@ -35,6 +39,7 @@ Do not set `HOST=0.0.0.0` on an untrusted network. If remote access is required,
 - There is no arbitrary read/write route.
 - The server never executes a project or exported file.
 - No shell command is constructed from browser input.
+- Installed-app exports use the operating-system save picker; the app cannot silently choose an arbitrary output path.
 
 ## Upload protections
 
@@ -57,7 +62,7 @@ The accessibility report is a focused authoring aid, not a security boundary or 
 - Dependency versions are pinned by `package-lock.json`.
 - CI runs `npm audit --audit-level=high`.
 - Dependabot checks npm dependencies weekly.
-- Dependencies are intentionally limited to Express, Helmet, Multer, Zod, and development tooling.
+- Runtime dependencies are intentionally limited to Express, Helmet, Multer, Zod, and the Tauri dialog/filesystem APIs.
 
 Run locally:
 
@@ -76,4 +81,6 @@ Open a private GitHub security advisory for the repository owner. Include the af
 
 ## Production considerations
 
-This release is designed for a trusted user on one laptop. Before making it multi-user or publicly reachable, add authentication, per-user authorization, CSRF protections, rate limiting, isolated storage, audit logging, stronger image processing, and a complete deployment-specific CSP review.
+This release is designed for a trusted user on one personal device. Before making it multi-user or publicly reachable, add authentication, per-user authorization, CSRF protections, rate limiting, isolated storage, audit logging, stronger image processing, and a complete deployment-specific CSP review.
+
+An EXE or APK conceals source better than distributing a repository, but client-side JavaScript, Rust binaries, and bundled assets can still be inspected or reverse engineered. Never embed API secrets, signing credentials, private algorithms, or database administrator keys in a client package. Keep sensitive logic behind an authenticated server if it is added later.

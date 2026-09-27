@@ -8,7 +8,7 @@ import { createBlock } from './components/factory.js';
 import { LayersPanel } from './panels/layers.js';
 import { PagesPanel } from './panels/pages.js';
 import { PropertiesPanel } from './panels/properties.js';
-import { api } from './storage/api.js';
+import { api, isDeviceStorageMode, saveTextToDevice } from './storage/api.js';
 import { $, $$, el, toast, showModal, hideModal } from './utils/dom.js';
 import { renderSettings } from './ui/settings.js';
 import { deploymentGuides } from './ui/deployment.js';
@@ -132,7 +132,10 @@ async function saveProject({ quiet = false } = {}) {
   try {
     const { project } = await api.saveProject(store.project);
     store.markSaved(project);
-    if (!quiet) toast('Project saved on this computer.');
+    if (!quiet)
+      toast(
+        isDeviceStorageMode() ? 'Project saved on this device.' : 'Project saved on this computer.',
+      );
     return true;
   } catch (error) {
     $('#save-label').textContent = 'Save failed';
@@ -235,13 +238,22 @@ function renderExportResult(result) {
         el('dd', { class: 'mt-1 break-all font-semibold text-slate-100', text: value }),
       ]),
     );
+  const entryFile = result.files?.find((file) => file.filename === 'index.html');
+  const downloadEntry = entryFile?.html
+    ? el('button', {
+        class: 'primary-button',
+        type: 'button',
+        text: 'Save index.html',
+        onclick: () => saveGeneratedFile(entryFile),
+      })
+    : el('a', {
+        class: 'primary-button',
+        href: result.downloadUrl,
+        download: 'index.html',
+        text: 'Download index.html',
+      });
   const actions = el('div', { class: 'mt-4 flex flex-wrap gap-2' }, [
-    el('a', {
-      class: 'primary-button',
-      href: result.downloadUrl,
-      download: 'index.html',
-      text: 'Download index.html',
-    }),
+    downloadEntry,
     el('a', {
       class: 'secondary-button',
       href: result.previewUrl,
@@ -255,15 +267,19 @@ function renderExportResult(result) {
       text: 'Download project backup',
       onclick: backupProject,
     }),
-    el('button', {
-      class: 'secondary-button',
-      type: 'button',
-      text: 'Copy file location',
-      onclick: () =>
-        navigator.clipboard
-          .writeText(result.absolutePath)
-          .then(() => toast('Export location copied.')),
-    }),
+    ...(result.deviceLocal
+      ? []
+      : [
+          el('button', {
+            class: 'secondary-button',
+            type: 'button',
+            text: 'Copy file location',
+            onclick: () =>
+              navigator.clipboard
+                .writeText(result.absolutePath)
+                .then(() => toast('Export location copied.')),
+          }),
+        ]),
     el('button', {
       class: 'secondary-button',
       type: 'button',
@@ -280,28 +296,47 @@ function renderExportResult(result) {
       'div',
       { class: 'flex flex-wrap gap-2' },
       (result.files || []).map((file) =>
-        el('a', {
-          class: 'secondary-button h-9',
-          href: file.previewUrl,
-          download: file.file.split('/').pop(),
-          text: `Download ${file.file.split('/').pop()}`,
-        }),
+        file.html
+          ? el('button', {
+              class: 'secondary-button h-9',
+              type: 'button',
+              text: `Save ${file.filename}`,
+              onclick: () => saveGeneratedFile(file),
+            })
+          : el('a', {
+              class: 'secondary-button h-9',
+              href: file.previewUrl,
+              download: file.file.split('/').pop(),
+              text: `Download ${file.file.split('/').pop()}`,
+            }),
       ),
     ),
   ]);
   summary.append(details, actions, pageFiles);
 }
 
-function backupProject() {
+async function saveGeneratedFile(file) {
+  try {
+    const destination = await saveTextToDevice(file.filename, file.html, 'html');
+    if (destination) toast(`${file.filename} saved.`);
+  } catch (error) {
+    toast(`File could not be saved: ${error.message}`, 'error');
+  }
+}
+
+async function backupProject() {
   if (!store.project) return;
-  const blob = new Blob([JSON.stringify(store.project, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `${store.project.project.slug || 'portfolio'}.portfolio.json`;
-  link.click();
-  URL.revokeObjectURL(url);
-  toast('Project backup downloaded.');
+  try {
+    const filename = `${store.project.project.slug || 'portfolio'}.portfolio.json`;
+    const destination = await saveTextToDevice(
+      filename,
+      JSON.stringify(store.project, null, 2),
+      'json',
+    );
+    if (destination) toast('Project backup saved.');
+  } catch (error) {
+    toast(`Backup could not be saved: ${error.message}`, 'error');
+  }
 }
 
 async function importProject(file) {

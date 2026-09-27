@@ -1,6 +1,6 @@
 # Local Portfolio Builder
 
-Local Portfolio Builder is a visual, drag-and-drop portfolio website editor that runs entirely on your laptop. It stores editable projects as structured JSON and exports clean, responsive, multi-page static websites that do not need Node.js after export.
+Local Portfolio Builder is a visual, drag-and-drop portfolio website editor available as a browser-based localhost tool and a Tauri desktop/Android application. It stores editable projects on the current device and exports clean, responsive, multi-page static websites that do not need Node.js after export.
 
 ## Highlights
 
@@ -18,12 +18,16 @@ Local Portfolio Builder is a visual, drag-and-drop portfolio website editor that
 - Built-in usage guide, canvas zoom, and a common accessibility issue checker
 - Phone-friendly editor with bottom-sheet access to blocks, pages, styles, checks, and help
 - Deployment assistant for GitHub Pages, Netlify, Vercel, Cloudflare Pages, cPanel, Apache/Nginx, and local hosting
+- Installable Windows and Android shells with private, device-local IndexedDB storage and native save dialogs
+- No Supabase, account, cloud database, or internet connection required for editing
 
 ## Prerequisites
 
 - Node.js 20 or newer
 - npm 10 or newer
 - A current Chrome, Edge, Firefox, or Safari browser
+
+Native packages additionally require the platform prerequisites described in [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## Install and run
 
@@ -45,6 +49,23 @@ Then open [http://127.0.0.1:3000](http://127.0.0.1:3000).
 
 The server binds to `127.0.0.1` by default and is not publicly exposed.
 
+## Run as an installed application
+
+The packaged application uses IndexedDB in its private WebView profile instead of the Express API. Start desktop development mode with:
+
+```bash
+npm run app:dev
+```
+
+Build installers with:
+
+```bash
+npm run app:build:windows
+npm run app:build:android
+```
+
+The Android project only needs to be initialized once with `npm run app:init:android`. Native builds still contain web assets and can be inspected by a determined recipient, so keep credentials and proprietary server logic out of the package.
+
 ## Workflow
 
 1. Choose a blank canvas or starter template.
@@ -53,7 +74,7 @@ The server binds to `127.0.0.1` by default and is not publicly exposed.
 4. Switch Desktop, Tablet, and Mobile modes to add breakpoint overrides.
 5. Use **Pages** to add independent pages and **Layers** to inspect each page hierarchy.
 6. Run the accessibility check and use canvas zoom where useful.
-7. Save the editable project locally or download a portable project backup.
+7. Save the editable project locally or download a portable project backup. Installed apps store explicit saves in device-local IndexedDB.
 8. Preview the production renderer.
 9. Select **Save / Export** to create `exports/<project-slug>/index.html` plus one `<page-slug>.html` file for each additional page.
 10. Download the generated HTML files or choose a platform in the deployment assistant for instructions.
@@ -73,6 +94,11 @@ npm test                 # unit and integration tests
 npm run test:e2e         # Playwright browser tests
 npm run audit            # high-severity dependency audit
 npm run check            # formatting, lint, tests, and build
+npm run app:dev          # run the Tauri desktop application in development
+npm run app:build:windows # build a Windows NSIS installer
+npm run app:init:android # generate the Android Studio project once
+npm run app:build:android # build a signed Android release package
+npm run app:build:android:debug # build a debug-signed ARM64 APK for testing
 ```
 
 The first E2E run may require:
@@ -101,12 +127,13 @@ src/
     js/editor/            canvas rendering and drag/drop
     js/panels/            properties, layers, and pages
     js/state/             serializable state and history
-    js/storage/           local API client
+    js/storage/           localhost API and device-local IndexedDB adapters
   server/                 localhost Express server
     routes/               constrained JSON, upload, and export APIs
     services/             project persistence and production renderer
     utils/                filesystem boundary helpers
   shared/                 document model, validation, and templates
+src-tauri/                Tauri desktop/Android shell, capabilities, and icons
 tests/                    unit, integration, and Playwright tests
 data/projects/            editable project JSON (ignored)
 exports/                  generated static sites (ignored)

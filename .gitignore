@@ -11,6 +11,11 @@ data/projects/*.json
 exports/*
 !exports/.gitkeep
 .sites-runtime/
+src-tauri/target/
+src-tauri/gen/android/.gradle/
+src-tauri/gen/android/local.properties
+*.jks
+*.keystore
 *.log
 .DS_Store
 Thumbs.db

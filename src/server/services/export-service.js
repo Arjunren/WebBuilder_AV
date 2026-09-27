@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { safeChildPath } from '../utils/path-security.js';
 import { normalizeProject, slugify } from '../../shared/model.js';
-import { renderExport } from './export-renderer.js';
+import { renderExport } from '../../shared/export-renderer.js';
 
 export class ExportService {
   constructor(root) {
