@@ -20,6 +20,7 @@ Local Portfolio Builder is a visual, drag-and-drop portfolio website editor avai
 - Deployment assistant for GitHub Pages, Netlify, Vercel, Cloudflare Pages, cPanel, Apache/Nginx, and local hosting
 - Installable Windows and Android shells with private, device-local IndexedDB storage and native save dialogs
 - No Supabase, account, cloud database, or internet connection required for editing
+- Mobile-safe Android toolbar inset plus an in-app developer credit for [ArjunrenVon](https://github.com/ArjunrenVon)
 
 ## Prerequisites
 
@@ -98,8 +99,11 @@ npm run app:dev          # run the Tauri desktop application in development
 npm run app:build:windows # build a Windows NSIS installer
 npm run app:init:android # generate the Android Studio project once
 npm run app:build:android # build a signed Android release package
-npm run app:build:android:debug # build a debug-signed ARM64 APK for testing
+npm run app:build:android:debug # build a debug-signed ARM64 + x86_64 APK for testing
+npm run app:collect      # collect underscore-named EXE/APK release assets
 ```
+
+`npm run app:collect` creates `WebBuilder_AV_Windows.exe` and `WebBuilder_AV_Android.apk` under the ignored `release-artifacts/` directory after both builds succeed.
 
 The first E2E run may require:
 
@@ -151,4 +155,4 @@ See [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), and [DEPLOYM
 
 ## License
 
-MIT © 2026 Arjunren
+MIT © 2026 ArjunrenVon

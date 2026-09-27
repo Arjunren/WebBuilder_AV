@@ -15,6 +15,9 @@ import { deploymentGuides } from './ui/deployment.js';
 import { auditProject } from './ui/accessibility.js';
 import { registerWebMcpTools } from './webmcp.js';
 
+if (isDeviceStorageMode() && /Android/i.test(navigator.userAgent))
+  document.documentElement.dataset.nativePlatform = 'android';
+
 const store = new EditorStore();
 const canvas = new CanvasController(store, $('#canvas'));
 const layers = new LayersPanel(store, $('#layers-panel'));

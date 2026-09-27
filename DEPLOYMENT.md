@@ -54,6 +54,19 @@ Tauri writes APK/AAB artifacts below `src-tauri/gen/android/app/build/outputs/`.
 
 Both installed variants save editable projects to device-local IndexedDB. They do not connect to Supabase or require a hosted database. Exported HTML and project backups are written only after the user chooses a destination in the native save dialog.
 
+After building both platforms, run:
+
+```bash
+npm run app:collect
+```
+
+This creates release-ready assets with stable, space-free names:
+
+- `release-artifacts/WebBuilder_AV_Windows.exe`
+- `release-artifacts/WebBuilder_AV_Android.apk`
+
+The same directory contains `SHA256SUMS.txt`. Upload these collected copies rather than older files left in platform-specific build directories.
+
 ## Test an exported website locally
 
 After export, use the **Preview export** action in the builder or run:

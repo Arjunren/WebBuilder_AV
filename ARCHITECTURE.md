@@ -88,6 +88,8 @@ The server owns two roots: `data/projects` and `exports`. Browser requests suppl
 
 The Tauri runtime exposes no generic command API. Its capability file grants only the core window defaults, save dialogs, and text-file writes selected through those dialogs. Editor drag-and-drop stays in the WebView by disabling Tauri's native file-drop interception.
 
+On Android, runtime detection adds a 10px top inset at mobile widths so the application toolbar remains below the device edge during APK testing. The normal browser and Windows layouts are unchanged.
+
 ## APIs
 
 | Method | Route                        | Purpose                                         |

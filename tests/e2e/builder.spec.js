@@ -62,6 +62,11 @@ test('adds pages, opens guidance, audits content, and works from the mobile dock
 
   await page.getByRole('button', { name: 'How to use', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'How to use the builder' })).toBeVisible();
+  await expect(page.locator('.developer-credit-card')).toContainText('Developed by ArjunrenVon');
+  await expect(page.locator('.developer-credit-card')).toHaveAttribute(
+    'href',
+    'https://github.com/ArjunrenVon',
+  );
   await page.locator('[data-close="help-modal"]').click();
 
   await page.getByRole('button', { name: 'Pages', exact: true }).last().click();
@@ -107,4 +112,21 @@ test('persists and exports projects without the server in device-local mode', as
   const download = page.waitForEvent('download');
   await page.getByRole('button', { name: 'Save index.html', exact: true }).first().click();
   expect((await download).suggestedFilename()).toBe('index.html');
+});
+
+test('adds the Android testing inset so mobile toolbar controls remain visible', async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, 'userAgent', {
+      configurable: true,
+      get: () => 'Mozilla/5.0 (Linux; Android 15) AppleWebKit/537.36',
+    });
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/?local=1');
+
+  await expect(page.locator('html')).toHaveAttribute('data-native-platform', 'android');
+  await expect(page.locator('#app')).toHaveCSS('padding-top', '10px');
+  await expect(page.locator('#export-button')).toBeVisible();
 });

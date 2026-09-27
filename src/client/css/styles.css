@@ -360,6 +360,9 @@
 }
 
 @media (max-width: 767px) {
+  html[data-native-platform='android'] #app {
+    padding-top: 10px;
+  }
   #mobile-panel-backdrop.hidden {
     display: none !important;
     pointer-events: none;
@@ -425,5 +428,17 @@
   .canvas-shell[data-viewport='base'],
   .canvas-shell[data-viewport='tablet'] {
     width: 100%;
+  }
+}
+
+@layer components {
+  .developer-credit-card {
+    @apply mt-5 flex items-center gap-3 rounded-2xl border border-violet-400/30 bg-violet-500/10 p-4 text-sm text-slate-300 transition hover:border-violet-300 hover:bg-violet-500/15;
+  }
+  .developer-credit-card svg {
+    @apply h-7 w-7 shrink-0 text-violet-300;
+  }
+  .developer-credit-card strong {
+    @apply text-white;
   }
 }

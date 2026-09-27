@@ -1,6 +1,6 @@
 {
   "name": "local-portfolio-builder",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "type": "module",
   "description": "A secure local-first visual portfolio builder for browsers, Windows, and Android.",
@@ -12,7 +12,8 @@
     "app:build:windows": "tauri build --bundles nsis",
     "app:init:android": "tauri android init",
     "app:build:android": "tauri android build --apk",
-    "app:build:android:debug": "tauri android build --apk --debug --target aarch64",
+    "app:build:android:debug": "tauri android build --apk --debug --target aarch64 x86_64",
+    "app:collect": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/collect-release-artifacts.ps1",
     "build": "vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173",
     "format": "prettier --write .",
